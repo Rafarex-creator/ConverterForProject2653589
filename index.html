@@ -126,11 +126,17 @@ import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ff
 const ffmpeg = createFFmpeg({ log:true });
 let loaded = false;
 
+/* FIXED FFmpeg loader */
 async function loadFFmpeg(){
   if(!loaded){
-    document.getElementById("status").innerText = "Loading engine...";
-    await ffmpeg.load();
-    loaded = true;
+    try{
+      document.getElementById("status").innerText = "Loading engine...";
+      await ffmpeg.load();
+      loaded = true;
+    } catch(e){
+      document.getElementById("status").innerText = "Failed to load engine";
+      console.error(e);
+    }
   }
 }
 
@@ -223,8 +229,10 @@ window.convertVideo = async function(){
 
   const data = ffmpeg.FS('readFile',out);
 
+  let mime = action === "mp3" ? "audio/mpeg" : "video/mp4";
+
   const url = URL.createObjectURL(
-    new Blob([new Uint8Array(data.buffer)], { type: "video/mp4" })
+    new Blob([new Uint8Array(data.buffer)], { type: mime })
   );
 
   output.innerHTML = `
