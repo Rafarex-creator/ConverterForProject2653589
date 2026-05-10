@@ -86,7 +86,7 @@
   <h1>File Converter</h1>
   <p>Images • Video • Audio</p>
 
-  <!-- 🖼️ IMAGE CONVERTER -->
+  <!-- IMAGE -->
   <div class="section">
     <h3>🖼️ Image Converter</h3>
 
@@ -101,7 +101,7 @@
     <button onclick="convertImage()">Convert Image</button>
   </div>
 
-  <!-- 🎥 VIDEO / AUDIO CONVERTER -->
+  <!-- VIDEO -->
   <div class="section">
     <h3>🎥 Video / Audio</h3>
 
@@ -134,11 +134,10 @@ async function loadFFmpeg(){
   }
 }
 
-/* 🖼️ IMAGE CONVERSION */
+/* 🖼️ IMAGE CONVERTER */
 window.convertImage = function(){
   const file = document.getElementById("imageFile").files[0];
   const action = document.getElementById("imageAction").value;
-  const output = document.getElementById("output");
   const status = document.getElementById("status");
 
   if(!file){
@@ -173,26 +172,35 @@ window.convertImage = function(){
     }
 
     canvas.toBlob(blob => {
+      if(!blob){
+        status.innerText = "Image conversion failed";
+        return;
+      }
+
       const url = URL.createObjectURL(blob);
 
-      output.innerHTML = `
-        <a download="converted.${ext}" href="${url}">
-          Download Image
-        </a>
-      `;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "converted." + ext;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
 
       status.innerText = "Done!";
     }, type);
   };
 };
 
-/* 🎥 VIDEO / AUDIO */
+/* 🎥 VIDEO CONVERTER */
 window.convertVideo = async function(){
 
   const file = document.getElementById("videoFile").files[0];
   const action = document.getElementById("videoAction").value;
-  const output = document.getElementById("output");
   const status = document.getElementById("status");
+  const output = document.getElementById("output");
 
   if(!file){
     alert("Select a video first");
@@ -214,7 +222,10 @@ window.convertVideo = async function(){
   }
 
   const data = ffmpeg.FS('readFile',out);
-  const url = URL.createObjectURL(new Blob([data.buffer]));
+
+  const url = URL.createObjectURL(
+    new Blob([new Uint8Array(data.buffer)], { type: "video/mp4" })
+  );
 
   output.innerHTML = `
     <a download="converted.${action}" href="${url}">
