@@ -23,16 +23,26 @@
 
     .box{
       width:100%;
-      max-width:600px;
+      max-width:700px;
       background:#1e293b;
       padding:25px;
       border-radius:16px;
       box-shadow:0 0 20px rgba(0,0,0,0.4);
     }
 
-    h1{
+    header{
       text-align:center;
       margin-bottom:10px;
+    }
+
+    .logo{
+      width:120px;
+      border-radius:12px;
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:5px;
     }
 
     p{
@@ -41,7 +51,7 @@
       margin-bottom:20px;
     }
 
-    input, select, button{
+    select, input, button{
       width:100%;
       padding:12px;
       margin-top:10px;
@@ -61,14 +71,17 @@
     }
 
     .status{
-      margin-top:15px;
       text-align:center;
+      margin-top:15px;
       color:#94a3b8;
       font-size:14px;
     }
 
-    a{
-      color:#38bdf8;
+    .section{
+      margin-top:15px;
+      padding:15px;
+      background:#0f172a;
+      border-radius:12px;
     }
   </style>
 </head>
@@ -76,76 +89,149 @@
 
 <div class="box">
 
+  <header>
+    <img src="Convy.png" class="logo" alt="Logo">
+  </header>
+
   <h1>File Converter</h1>
-  <p>Simple browser-based converter</p>
+  <p>Images • Video • Audio • Basic PDF tools</p>
 
-  <input type="file" id="fileInput" />
-
-  <select id="format">
-    <option value="mp3">MP4 → MP3</option>
-    <option value="mp4">MP4 → MP4 (re-encode)</option>
+  <select id="type" onchange="updateOptions()">
+    <option value="image">Image</option>
+    <option value="video">Video / Audio</option>
+    <option value="pdf">PDF (basic)</option>
   </select>
 
-  <button id="convertBtn">Convert</button>
+  <input type="file" id="file" />
 
-  <div class="status" id="status">Waiting for file...</div>
+  <select id="action"></select>
 
-  <div id="download"></div>
+  <button onclick="convert()">Convert</button>
+
+  <div class="status" id="status">Waiting...</div>
+  <div id="output"></div>
+
 </div>
 
 <script type="module">
-  import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
 
-  const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ log:true });
+let loaded = false;
 
-  const fileInput = document.getElementById('fileInput');
-  const convertBtn = document.getElementById('convertBtn');
-  const status = document.getElementById('status');
-  const download = document.getElementById('download');
+async function loadFFmpeg(){
+  if(!loaded){
+    document.getElementById('status').innerText = "Loading engine...";
+    await ffmpeg.load();
+    loaded = true;
+  }
+}
 
-  let loaded = false;
+const action = document.getElementById('action');
 
-  async function loadFFmpeg(){
-    if(!loaded){
-      status.textContent = "Loading converter engine...";
-      await ffmpeg.load();
-      loaded = true;
-      status.textContent = "Ready.";
-    }
+window.updateOptions = function(){
+  const type = document.getElementById('type').value;
+
+  if(type === "image"){
+    action.innerHTML = `
+      <option value="img-jpg">PNG/JPG → JPG</option>
+      <option value="img-png">JPG/PNG → PNG</option>
+      <option value="img-webp">Image → WEBP</option>
+    `;
   }
 
-  convertBtn.addEventListener('click', async () => {
-    const file = fileInput.files[0];
-    if(!file){
-      alert("Please select a file first");
-      return;
-    }
+  if(type === "video"){
+    action.innerHTML = `
+      <option value="mp3">Video → MP3</option>
+      <option value="mp4">Video → MP4</option>
+    `;
+  }
+
+  if(type === "pdf"){
+    action.innerHTML = `
+      <option value="pdf-text">PDF → Text (basic)</option>
+    `;
+  }
+}
+
+updateOptions();
+
+window.convert = async function(){
+
+  const file = document.getElementById('file').files[0];
+  const act = document.getElementById('action').value;
+  const status = document.getElementById('status');
+  const output = document.getElementById('output');
+
+  if(!file){
+    alert("Upload a file first");
+    return;
+  }
+
+  output.innerHTML = "";
+
+  /* ---------------- IMAGE CONVERSION ---------------- */
+  if(act.startsWith("img")){
+
+    status.innerText = "Processing image...";
+
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img,0,0);
+
+      let type = "image/png";
+
+      if(act === "img-jpg") type = "image/jpeg";
+      if(act === "img-webp") type = "image/webp";
+
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        output.innerHTML = `<a download='converted' href='${url}'>Download Image</a>`;
+        status.innerText = "Done!";
+      }, type);
+
+    };
+
+  }
+
+  /* ---------------- VIDEO / AUDIO ---------------- */
+  else if(act === "mp3" || act === "mp4"){
 
     await loadFFmpeg();
 
-    const format = document.getElementById('format').value;
+    status.innerText = "Processing video/audio...";
 
-    download.innerHTML = "";
-    status.textContent = "Processing...";
+    ffmpeg.FS('writeFile','input',await fetchFile(file));
 
-    const inputName = 'input.mp4';
-    const outputName = 'output.' + format;
+    let out = act === "mp3" ? "out.mp3" : "out.mp4";
 
-    ffmpeg.FS('writeFile', inputName, await fetchFile(file));
-
-    if(format === "mp3"){
-      await ffmpeg.run('-i', inputName, outputName);
+    if(act === "mp3"){
+      await ffmpeg.run('-i','input','out.mp3');
     } else {
-      await ffmpeg.run('-i', inputName, '-c:v', 'libx264', outputName);
+      await ffmpeg.run('-i','input','-c:v','libx264','out.mp4');
     }
 
-    const data = ffmpeg.FS('readFile', outputName);
+    const data = ffmpeg.FS('readFile',out);
     const url = URL.createObjectURL(new Blob([data.buffer]));
 
-    status.textContent = "Done!";
+    output.innerHTML = `<a download='converted.${act}' href='${url}'>Download File</a>`;
+    status.innerText = "Done!";
+  }
 
-    download.innerHTML = `<a href="${url}" download="converted.${format}">Download File</a>`;
-  });
+  /* ---------------- PDF (basic) ---------------- */
+  else if(act === "pdf-text"){
+    status.innerText = "PDF tools require backend for full support.";
+    output.innerHTML = "Text extraction not fully supported in browser demo.";
+  }
+
+}
 </script>
 
 </body>
