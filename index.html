@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>File Converter</title>
 
-  <!-- FAVICON -->
   <link rel="icon" type="image/png" href="Convy.png">
 
   <style>
@@ -126,17 +125,11 @@ import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ff
 const ffmpeg = createFFmpeg({ log:true });
 let loaded = false;
 
-/* FIXED FFmpeg loader */
 async function loadFFmpeg(){
   if(!loaded){
-    try{
-      document.getElementById("status").innerText = "Loading engine...";
-      await ffmpeg.load();
-      loaded = true;
-    } catch(e){
-      document.getElementById("status").innerText = "Failed to load engine";
-      console.error(e);
-    }
+    document.getElementById("status").innerText = "Loading engine...";
+    await ffmpeg.load();
+    loaded = true;
   }
 }
 
@@ -188,7 +181,6 @@ window.convertImage = function(){
       const a = document.createElement("a");
       a.href = url;
       a.download = "converted." + ext;
-
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -206,7 +198,6 @@ window.convertVideo = async function(){
   const file = document.getElementById("videoFile").files[0];
   const action = document.getElementById("videoAction").value;
   const status = document.getElementById("status");
-  const output = document.getElementById("output");
 
   if(!file){
     alert("Select a video first");
@@ -231,15 +222,18 @@ window.convertVideo = async function(){
 
   let mime = action === "mp3" ? "audio/mpeg" : "video/mp4";
 
-  const url = URL.createObjectURL(
-    new Blob([new Uint8Array(data.buffer)], { type: mime })
-  );
+  const blob = new Blob([data.buffer], { type: mime });
+  const url = URL.createObjectURL(blob);
 
-  output.innerHTML = `
-    <a download="converted.${action}" href="${url}">
-      Download File
-    </a>
-  `;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `converted.${action}`;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
 
   status.innerText = "Done!";
 };
