@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>File Converter</title>
 
-  <!-- FAVICON (tab icon) -->
+  <!-- FAVICON -->
   <link rel="icon" type="image/png" href="Convy.png">
 
   <style>
@@ -30,16 +30,6 @@
       box-shadow:0 0 20px rgba(0,0,0,0.4);
     }
 
-    header{
-      text-align:center;
-      margin-bottom:10px;
-    }
-
-    .logo{
-      width:120px;
-      border-radius:12px;
-    }
-
     h1{
       text-align:center;
       margin-bottom:5px;
@@ -51,7 +41,14 @@
       margin-bottom:20px;
     }
 
-    select, input, button{
+    .section{
+      margin-top:15px;
+      padding:15px;
+      background:#0f172a;
+      border-radius:12px;
+    }
+
+    input, select, button{
       width:100%;
       padding:12px;
       margin-top:10px;
@@ -74,39 +71,49 @@
       text-align:center;
       margin-top:15px;
       color:#94a3b8;
-      font-size:14px;
     }
 
-    .section{
-      margin-top:15px;
-      padding:15px;
-      background:#0f172a;
-      border-radius:12px;
+    a{
+      color:#38bdf8;
     }
   </style>
 </head>
+
 <body>
 
 <div class="box">
 
-  <header>
-    <img src="Convy.png" class="logo" alt="Logo">
-  </header>
-
   <h1>File Converter</h1>
-  <p>Images • Video • Audio • Basic PDF tools</p>
+  <p>Images • Video • Audio</p>
 
-  <select id="type" onchange="updateOptions()">
-    <option value="image">Image</option>
-    <option value="video">Video / Audio</option>
-    <option value="pdf">PDF (basic)</option>
-  </select>
+  <!-- 🖼️ IMAGE CONVERTER -->
+  <div class="section">
+    <h3>🖼️ Image Converter</h3>
 
-  <input type="file" id="file" />
+    <input type="file" id="imageFile" accept="image/*">
 
-  <select id="action"></select>
+    <select id="imageAction">
+      <option value="jpg">→ JPG</option>
+      <option value="png">→ PNG</option>
+      <option value="webp">→ WEBP</option>
+    </select>
 
-  <button onclick="convert()">Convert</button>
+    <button onclick="convertImage()">Convert Image</button>
+  </div>
+
+  <!-- 🎥 VIDEO / AUDIO CONVERTER -->
+  <div class="section">
+    <h3>🎥 Video / Audio</h3>
+
+    <input type="file" id="videoFile">
+
+    <select id="videoAction">
+      <option value="mp3">Video → MP3</option>
+      <option value="mp4">Video → MP4</option>
+    </select>
+
+    <button onclick="convertVideo()">Convert Video</button>
+  </div>
 
   <div class="status" id="status">Waiting...</div>
   <div id="output"></div>
@@ -121,117 +128,103 @@ let loaded = false;
 
 async function loadFFmpeg(){
   if(!loaded){
-    document.getElementById('status').innerText = "Loading engine...";
+    document.getElementById("status").innerText = "Loading engine...";
     await ffmpeg.load();
     loaded = true;
   }
 }
 
-const action = document.getElementById('action');
-
-window.updateOptions = function(){
-  const type = document.getElementById('type').value;
-
-  if(type === "image"){
-    action.innerHTML = `
-      <option value="img-jpg">PNG/JPG → JPG</option>
-      <option value="img-png">JPG/PNG → PNG</option>
-      <option value="img-webp">Image → WEBP</option>
-    `;
-  }
-
-  if(type === "video"){
-    action.innerHTML = `
-      <option value="mp3">Video → MP3</option>
-      <option value="mp4">Video → MP4</option>
-    `;
-  }
-
-  if(type === "pdf"){
-    action.innerHTML = `
-      <option value="pdf-text">PDF → Text (basic)</option>
-    `;
-  }
-}
-
-updateOptions();
-
-window.convert = async function(){
-
-  const file = document.getElementById('file').files[0];
-  const act = document.getElementById('action').value;
-  const status = document.getElementById('status');
-  const output = document.getElementById('output');
+/* 🖼️ IMAGE CONVERSION */
+window.convertImage = function(){
+  const file = document.getElementById("imageFile").files[0];
+  const action = document.getElementById("imageAction").value;
+  const output = document.getElementById("output");
+  const status = document.getElementById("status");
 
   if(!file){
-    alert("Upload a file first");
+    alert("Select an image first");
     return;
   }
 
-  output.innerHTML = "";
+  status.innerText = "Converting image...";
 
-  /* ---------------- IMAGE CONVERSION ---------------- */
-  if(act.startsWith("img")){
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
 
-    status.innerText = "Processing image...";
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img,0,0);
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+    let type = "image/png";
+    let ext = "png";
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img,0,0);
-
-      let type = "image/png";
-
-      if(act === "img-jpg") type = "image/jpeg";
-      if(act === "img-webp") type = "image/webp";
-
-      canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        output.innerHTML = `<a download='converted' href='${url}'>Download Image</a>`;
-        status.innerText = "Done!";
-      }, type);
-
-    };
-
-  }
-
-  /* ---------------- VIDEO / AUDIO ---------------- */
-  else if(act === "mp3" || act === "mp4"){
-
-    await loadFFmpeg();
-
-    status.innerText = "Processing video/audio...";
-
-    ffmpeg.FS('writeFile','input',await fetchFile(file));
-
-    let out = act === "mp3" ? "out.mp3" : "out.mp4";
-
-    if(act === "mp3"){
-      await ffmpeg.run('-i','input','out.mp3');
-    } else {
-      await ffmpeg.run('-i','input','-c:v','libx264','out.mp4');
+    if(action === "jpg"){
+      type = "image/jpeg";
+      ext = "jpg";
     }
 
-    const data = ffmpeg.FS('readFile',out);
-    const url = URL.createObjectURL(new Blob([data.buffer]));
+    if(action === "webp"){
+      type = "image/webp";
+      ext = "webp";
+    }
 
-    output.innerHTML = `<a download='converted.${act}' href='${url}'>Download File</a>`;
-    status.innerText = "Done!";
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+
+      output.innerHTML = `
+        <a download="converted.${ext}" href="${url}">
+          Download Image
+        </a>
+      `;
+
+      status.innerText = "Done!";
+    }, type);
+  };
+};
+
+/* 🎥 VIDEO / AUDIO */
+window.convertVideo = async function(){
+
+  const file = document.getElementById("videoFile").files[0];
+  const action = document.getElementById("videoAction").value;
+  const output = document.getElementById("output");
+  const status = document.getElementById("status");
+
+  if(!file){
+    alert("Select a video first");
+    return;
   }
 
-  /* ---------------- PDF (basic) ---------------- */
-  else if(act === "pdf-text"){
-    status.innerText = "PDF tools require backend for full support.";
-    output.innerHTML = "Text extraction not fully supported in browser demo.";
+  await loadFFmpeg();
+
+  status.innerText = "Processing video...";
+
+  ffmpeg.FS('writeFile','input',await fetchFile(file));
+
+  let out = action === "mp3" ? "out.mp3" : "out.mp4";
+
+  if(action === "mp3"){
+    await ffmpeg.run('-i','input','out.mp3');
+  } else {
+    await ffmpeg.run('-i','input','-c:v','libx264','out.mp4');
   }
 
-}
+  const data = ffmpeg.FS('readFile',out);
+  const url = URL.createObjectURL(new Blob([data.buffer]));
+
+  output.innerHTML = `
+    <a download="converted.${action}" href="${url}">
+      Download File
+    </a>
+  `;
+
+  status.innerText = "Done!";
+};
+
 </script>
 
 </body>
