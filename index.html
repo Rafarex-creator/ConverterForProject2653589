@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Free File Converter (FFmpeg.wasm)</title>
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#0f172a;
+      color:white;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      padding:20px;
+    }
+
+    .box{
+      width:100%;
+      max-width:600px;
+      background:#1e293b;
+      padding:25px;
+      border-radius:16px;
+      box-shadow:0 0 20px rgba(0,0,0,0.4);
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:10px;
+    }
+
+    p{
+      text-align:center;
+      color:#cbd5e1;
+      margin-bottom:20px;
+    }
+
+    input, select, button{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:10px;
+      border:none;
+      font-size:16px;
+    }
+
+    button{
+      background:#38bdf8;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    button:hover{
+      background:#0ea5e9;
+    }
+
+    .status{
+      margin-top:15px;
+      text-align:center;
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    a{
+      color:#38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h1>FFmpeg File Converter</h1>
+  <p>Runs completely in your browser (no uploads)</p>
+
+  <input type="file" id="fileInput" />
+
+  <select id="format">
+    <option value="mp3">MP4 → MP3</option>
+    <option value="mp4">(basic re-encode MP4)</option>
+  </select>
+
+  <button id="convertBtn">Convert</button>
+
+  <div class="status" id="status">Waiting for file...</div>
+
+  <div id="download"></div>
+</div>
+
+<script type="module">
+  import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+
+  const ffmpeg = createFFmpeg({ log: true });
+
+  const fileInput = document.getElementById('fileInput');
+  const convertBtn = document.getElementById('convertBtn');
+  const status = document.getElementById('status');
+  const download = document.getElementById('download');
+
+  let loaded = false;
+
+  async function loadFFmpeg(){
+    if(!loaded){
+      status.textContent = "Loading FFmpeg engine (first time only)...";
+      await ffmpeg.load();
+      loaded = true;
+      status.textContent = "FFmpeg ready.";
+    }
+  }
+
+  convertBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if(!file){
+      alert("Please select a file first");
+      return;
+    }
+
+    await loadFFmpeg();
+
+    const format = document.getElementById('format').value;
+
+    download.innerHTML = "";
+
+    status.textContent = "Processing file...";
+
+    const inputName = 'input.mp4';
+    const outputName = 'output.' + format;
+
+    ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+
+    if(format === "mp3"){
+      await ffmpeg.run('-i', inputName, outputName);
+    } else {
+      await ffmpeg.run('-i', inputName, '-c:v', 'libx264', outputName);
+    }
+
+    const data = ffmpeg.FS('readFile', outputName);
+
+    const url = URL.createObjectURL(new Blob([data.buffer]));
+
+    status.textContent = "Done!";
+
+    download.innerHTML = `<a href="${url}" download="converted.${format}">Download File</a>`;
+  });
+</script>
+
+</body>
+</html>
