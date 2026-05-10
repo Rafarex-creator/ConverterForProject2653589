@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Free File Converter (FFmpeg.wasm)</title>
+  <title>File Converter</title>
 
-  <!-- Favicon (website tab icon) -->
-  <link rel="icon" type="image/png" href="images/logo.png">
+  <!-- FAVICON (tab icon) -->
+  <link rel="icon" type="image/png" href="logo.png">
 
   <style>
     body{
@@ -30,20 +30,9 @@
       box-shadow:0 0 20px rgba(0,0,0,0.4);
     }
 
-    header{
-      text-align:center;
-      margin-bottom:15px;
-    }
-
-    .logo{
-      width:120px;
-      border-radius:12px;
-    }
-
     h1{
       text-align:center;
       margin-bottom:10px;
-      font-size:26px;
     }
 
     p{
@@ -63,8 +52,8 @@
 
     button{
       background:#38bdf8;
-      cursor:pointer;
       font-weight:bold;
+      cursor:pointer;
     }
 
     button:hover{
@@ -87,19 +76,14 @@
 
 <div class="box">
 
-  <!-- LOGO -->
-  <header>
-    <img src="Convy.png" alt="Website Logo" class="logo">
-  </header>
-
-  <h1>FFmpeg File Converter</h1>
-  <p>Runs completely in your browser (no uploads)</p>
+  <h1>File Converter</h1>
+  <p>Simple browser-based converter</p>
 
   <input type="file" id="fileInput" />
 
   <select id="format">
     <option value="mp3">MP4 → MP3</option>
-    <option value="mp4">(basic re-encode MP4)</option>
+    <option value="mp4">MP4 → MP4 (re-encode)</option>
   </select>
 
   <button id="convertBtn">Convert</button>
@@ -123,10 +107,10 @@
 
   async function loadFFmpeg(){
     if(!loaded){
-      status.textContent = "Loading FFmpeg engine...";
+      status.textContent = "Loading converter engine...";
       await ffmpeg.load();
       loaded = true;
-      status.textContent = "FFmpeg ready.";
+      status.textContent = "Ready.";
     }
   }
 
@@ -142,8 +126,7 @@
     const format = document.getElementById('format').value;
 
     download.innerHTML = "";
-
-    status.textContent = "Processing file...";
+    status.textContent = "Processing...";
 
     const inputName = 'input.mp4';
     const outputName = 'output.' + format;
@@ -157,7 +140,6 @@
     }
 
     const data = ffmpeg.FS('readFile', outputName);
-
     const url = URL.createObjectURL(new Blob([data.buffer]));
 
     status.textContent = "Done!";
@@ -168,4 +150,3 @@
 
 </body>
 </html>
-
