@@ -1,244 +1,662 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+ <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>File Converter</title>
-
-  <link rel="icon" type="image/png" href="Convy.png">
-
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body{
-      margin:0;
-      font-family:Arial, sans-serif;
-      background:#0f172a;
-      color:white;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
-      padding:20px;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f3ff;
+      --card: #ffffff;
+      --primary: #7c3aed;
+      --primary-light: #ede9fe;
+      --primary-fg: #ffffff;
+      --secondary: #fce7f3;
+      --secondary-fg: #831843;
+      --accent: #e0f2fe;
+      --accent-fg: #0c4a6e;
+      --muted: #f1f0f5;
+      --muted-fg: #6b7280;
+      --border: #e5e1f5;
+      --text: #1e1b4b;
+      --text-light: #6b7280;
+      --radius-bubble: 2rem;
+      --radius-blob: 3rem;
+      --radius-full: 9999px;
     }
 
-    .box{
-      width:100%;
-      max-width:700px;
-      background:#1e293b;
-      padding:25px;
-      border-radius:16px;
-      box-shadow:0 0 20px rgba(0,0,0,0.4);
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    h1{
-      text-align:center;
-      margin-bottom:5px;
+    /* Background blobs */
+    .bg-blob {
+      position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0;
+    }
+    .blob1 { width: 400px; height: 400px; background: rgba(124,58,237,0.07); top: 5%; left: -10%; animation: blobAnim 8s ease-in-out infinite; }
+    .blob2 { width: 500px; height: 500px; background: rgba(252,231,243,0.5); top: 20%; right: -8%; animation: blobAnim 10s ease-in-out infinite reverse; }
+    .blob3 { width: 350px; height: 350px; background: rgba(224,242,254,0.4); bottom: 10%; left: 30%; animation: blobAnim 12s ease-in-out infinite 2s; }
+
+    @keyframes blobAnim {
+      0%,100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+      50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    p{
-      text-align:center;
-      color:#cbd5e1;
-      margin-bottom:20px;
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 680px; margin: 0 auto;
+      padding: 3rem 1.25rem 2rem;
     }
 
-    .section{
-      margin-top:15px;
-      padding:15px;
-      background:#0f172a;
-      border-radius:12px;
+    /* Header */
+    .header { text-align: center; margin-bottom: 2.5rem; animation: fadeUp 0.5s ease both; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--primary-light); color: var(--primary);
+      padding: 0.4rem 1.1rem; border-radius: var(--radius-full);
+      font-size: 0.8rem; font-weight: 700; margin-bottom: 1.2rem;
     }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; line-height: 1.15; }
+    h1 span { color: var(--primary); }
+    .subtitle { color: var(--text-light); margin-top: 0.75rem; font-size: 1.05rem; }
 
-    input, select, button{
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:10px;
-      border:none;
-      font-size:16px;
+    /* Tab switcher */
+    .tabs { display: flex; justify-content: center; margin-bottom: 1.5rem; animation: fadeUp 0.5s ease 0.05s both; }
+    .tab-inner { background: var(--muted); border-radius: var(--radius-full); padding: 0.35rem; display: flex; gap: 0.25rem; }
+    .tab-btn {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.55rem 1.5rem; border-radius: var(--radius-full);
+      font-family: inherit; font-weight: 700; font-size: 0.9rem;
+      border: none; cursor: pointer; transition: all 0.25s;
+      background: transparent; color: var(--text-light);
     }
+    .tab-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 2px 8px rgba(124,58,237,0.12); }
+    .tab-btn svg { width: 16px; height: 16px; }
 
-    button{
-      background:#38bdf8;
-      font-weight:bold;
-      cursor:pointer;
+    /* Card */
+    .card {
+      background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: var(--radius-blob);
+      box-shadow: 0 8px 40px rgba(124,58,237,0.07);
+      padding: 2rem 2.5rem;
+      animation: fadeUp 0.5s ease 0.1s both;
     }
+    @media (max-width: 500px) { .card { padding: 1.5rem 1.25rem; } }
 
-    button:hover{
-      background:#0ea5e9;
-    }
+    /* Panel visibility */
+    .panel { display: none; }
+    .panel.active { display: block; }
 
-    .status{
-      text-align:center;
-      margin-top:15px;
-      color:#94a3b8;
+    /* Step label */
+    .step-label { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .step-num {
+      width: 2rem; height: 2rem; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      font-weight: 800; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
+    .step-label span { font-weight: 700; }
 
-    a{
-      color:#38bdf8;
+    /* Drop zone */
+    .dropzone {
+      border: 2.5px dashed var(--border); border-radius: var(--radius-blob);
+      padding: 3.5rem 2rem; cursor: pointer; text-align: center;
+      transition: all 0.3s; position: relative; overflow: hidden;
+      margin-bottom: 1.75rem;
     }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: rgba(124,58,237,0.03); }
+    .dropzone-icon {
+      width: 5rem; height: 5rem; border-radius: 50%;
+      background: var(--primary-light); margin: 0 auto 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      animation: float 3s ease-in-out infinite;
+    }
+    .dropzone-icon svg { width: 2rem; height: 2rem; color: var(--primary); }
+    .dropzone-title { font-size: 1.1rem; font-weight: 800; }
+    .dropzone-sub { color: var(--text-light); margin-top: 0.4rem; font-size: 0.9rem; }
+    .dropzone-formats { display: flex; align-items: center; gap: 0.4rem; justify-content: center; margin-top: 1rem; color: var(--text-light); font-size: 0.78rem; }
+
+    /* File preview inside dropzone */
+    .file-preview { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 1rem 0; }
+    .file-preview img, .file-preview video {
+      max-height: 160px; max-width: 100%; border-radius: var(--radius-bubble);
+      box-shadow: 0 4px 20px rgba(124,58,237,0.1);
+    }
+    .file-preview .file-name { font-weight: 700; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-preview .file-meta { color: var(--text-light); font-size: 0.82rem; }
+    .change-link { color: var(--primary); font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+    /* Format buttons */
+    .formats-row { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-bottom: 1.75rem; align-items: center; }
+    .source-badge {
+      background: var(--muted); color: var(--text-light);
+      padding: 0.45rem 1rem; border-radius: var(--radius-full);
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .arrow-icon { color: var(--primary); animation: float 3s ease-in-out infinite; width: 20px; height: 20px; }
+    .fmt-btn {
+      padding: 0.6rem 1.4rem; border-radius: var(--radius-full);
+      font-family: inherit; font-weight: 700; font-size: 0.85rem;
+      border: none; cursor: pointer; transition: all 0.2s;
+    }
+    .fmt-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .fmt-btn:active { transform: scale(0.95); }
+    .fmt-btn.selected { background: var(--primary); color: var(--primary-fg); box-shadow: 0 4px 16px rgba(124,58,237,0.3); }
+    .fmt-btn.disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+    .fmt-btn.style-secondary { background: var(--secondary); color: var(--secondary-fg); }
+    .fmt-btn.style-accent { background: var(--accent); color: var(--accent-fg); }
+    .fmt-btn.style-muted { background: var(--muted); color: var(--text-light); }
+    .fmt-btn.style-primary-light { background: var(--primary-light); color: var(--primary); }
+
+    /* Convert button */
+    .convert-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; padding: 0.9rem 2rem;
+      background: var(--primary); color: var(--primary-fg);
+      border: none; border-radius: var(--radius-full);
+      font-family: inherit; font-weight: 800; font-size: 1rem;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 6px 24px rgba(124,58,237,0.3);
+      margin-top: 0.25rem;
+    }
+    .convert-btn:hover { transform: scale(1.02); box-shadow: 0 8px 28px rgba(124,58,237,0.35); }
+    .convert-btn:active { transform: scale(0.98); }
+    .convert-btn svg { width: 20px; height: 20px; }
+
+    /* Progress */
+    .progress-wrap { text-align: center; padding: 2rem 0; }
+    .spinner-circle {
+      width: 4rem; height: 4rem; border-radius: 50%;
+      background: var(--primary-light); margin: 0 auto 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spinner-circle svg { width: 28px; height: 28px; color: var(--primary); animation: spin 1s linear infinite; }
+    .progress-title { font-weight: 700; font-size: 1rem; }
+    .progress-sub { color: var(--text-light); font-size: 0.85rem; margin-top: 0.3rem; }
+    .progress-bar-wrap { max-width: 280px; margin: 1rem auto 0; }
+    .progress-bar-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-light); margin-bottom: 0.3rem; }
+    .progress-bar-bg { height: 10px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--primary); border-radius: var(--radius-full); transition: width 0.3s; width: 0%; }
+
+    /* Result */
+    .result-wrap { text-align: center; padding: 0.5rem 0; }
+    .result-success { display: flex; align-items: center; gap: 0.5rem; justify-content: center; color: var(--primary); margin-bottom: 1.25rem; }
+    .result-success svg { width: 24px; height: 24px; }
+    .result-success span { font-weight: 800; font-size: 1.1rem; }
+    .result-preview { border-radius: var(--radius-bubble); overflow: hidden; background: var(--muted); padding: 0.5rem; max-width: 320px; margin: 0 auto 1.5rem; }
+    .result-preview img, .result-preview video { width: 100%; border-radius: var(--radius-bubble); max-height: 200px; object-fit: contain; }
+    .result-btns { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.7rem 2rem; border-radius: var(--radius-full);
+      background: var(--primary); color: var(--primary-fg);
+      font-family: inherit; font-weight: 800; font-size: 0.9rem;
+      text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.25); transition: all 0.2s;
+    }
+    .dl-btn:hover { transform: scale(1.03); }
+    .dl-btn svg { width: 18px; height: 18px; }
+    .reset-btn {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.7rem 1.5rem; border-radius: var(--radius-full);
+      background: transparent; color: var(--text); border: 2px solid var(--border);
+      font-family: inherit; font-weight: 700; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .reset-btn:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.03); }
+    .reset-btn svg { width: 16px; height: 16px; }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+
+    /* Footer */
+    .footer { text-align: center; color: var(--text-light); font-size: 0.75rem; margin-top: 2rem; }
+
+    /* Section spacing */
+    .section { margin-bottom: 1.5rem; }
   </style>
 </head>
-
 <body>
 
-<div class="box">
+<!-- Background blobs -->
+<div class="bg-blob blob1"></div>
+<div class="bg-blob blob2"></div>
+<div class="bg-blob blob3"></div>
 
-  <h1>File Converter</h1>
-  <p>Images • Video • Audio</p>
-
-  <!-- IMAGE -->
-  <div class="section">
-    <h3>🖼️ Image Converter</h3>
-
-    <input type="file" id="imageFile" accept="image/*">
-
-    <select id="imageAction">
-      <option value="jpg">→ JPG</option>
-      <option value="png">→ PNG</option>
-      <option value="webp">→ WEBP</option>
-    </select>
-
-    <button onclick="convertImage()">Convert Image</button>
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z"/></svg>
+      Free File Converter
+    </div>
+    <h1>Convert anything<br><span>instantly</span></h1>
+    <p class="subtitle">Images &amp; videos — all in your browser, no uploads, no accounts.</p>
   </div>
 
-  <!-- VIDEO -->
-  <div class="section">
-    <h3>🎥 Video / Audio</h3>
-
-    <input type="file" id="videoFile">
-
-    <select id="videoAction">
-      <option value="mp3">Video → MP3</option>
-      <option value="mp4">Video → MP4</option>
-    </select>
-
-    <button onclick="convertVideo()">Convert Video</button>
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab-inner">
+      <button class="tab-btn active" onclick="switchTab('image')" id="tab-image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Image
+      </button>
+      <button class="tab-btn" onclick="switchTab('video')" id="tab-video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Video
+      </button>
+    </div>
   </div>
 
-  <div class="status" id="status">Waiting...</div>
-  <div id="output"></div>
+  <!-- Card -->
+  <div class="card">
 
+    <!-- ═══ IMAGE PANEL ═══ -->
+    <div class="panel active" id="panel-image">
+      <div class="section">
+        <div class="step-label"><div class="step-num">1</div><span>Choose your image</span></div>
+        <div class="dropzone" id="img-dropzone"
+          ondragover="dzDragOver(event,'img-dropzone')"
+          ondragleave="dzDragLeave('img-dropzone')"
+          ondrop="imgDrop(event)"
+          onclick="imgPickFile()">
+          <div id="img-dz-empty">
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+            </div>
+            <div class="dropzone-title">Drop your image here</div>
+            <div class="dropzone-sub">or click to browse files</div>
+            <div class="dropzone-formats">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              PNG, JPG, WEBP, BMP, GIF
+            </div>
+          </div>
+          <div id="img-dz-preview" class="file-preview hidden">
+            <img id="img-preview-el" src="" alt="Preview" />
+            <div class="file-name" id="img-file-name"></div>
+            <div class="file-meta"><span id="img-file-size"></span> · <span class="change-link" onclick="event.stopPropagation();imgPickFile()">Click to change</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section hidden" id="img-step2">
+        <div class="step-label"><div class="step-num">2</div><span>Pick output format</span></div>
+        <div class="formats-row" id="img-formats">
+          <span class="source-badge" id="img-source-badge"></span>
+          <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <span style="font-size:0.85rem;font-weight:700">Convert to:</span>
+        </div>
+        <div class="formats-row" id="img-format-btns"></div>
+      </div>
+
+      <div id="img-convert-btn-wrap" class="hidden">
+        <button class="convert-btn" onclick="convertImage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.11"/></svg>
+          <span id="img-btn-label">Convert to PNG</span>
+        </button>
+      </div>
+
+      <div id="img-converting" class="progress-wrap hidden">
+        <div class="spinner-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+        </div>
+        <div class="progress-title">Converting your image...</div>
+        <div class="progress-sub">This will only take a moment</div>
+      </div>
+
+      <div id="img-result" class="result-wrap hidden"></div>
+    </div>
+
+    <!-- ═══ VIDEO PANEL ═══ -->
+    <div class="panel" id="panel-video">
+      <div class="section">
+        <div class="step-label"><div class="step-num">1</div><span>Choose your video</span></div>
+        <div class="dropzone" id="vid-dropzone"
+          ondragover="dzDragOver(event,'vid-dropzone')"
+          ondragleave="dzDragLeave('vid-dropzone')"
+          ondrop="vidDrop(event)"
+          onclick="vidPickFile()">
+          <div id="vid-dz-empty">
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+            </div>
+            <div class="dropzone-title">Drop your video here</div>
+            <div class="dropzone-sub">or click to browse</div>
+            <div class="dropzone-formats">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              MP4, WEBM, AVI, MOV, MKV
+            </div>
+          </div>
+          <div id="vid-dz-preview" class="file-preview hidden">
+            <video id="vid-preview-el" controls style="max-height:140px;max-width:100%;border-radius:1.5rem"></video>
+            <div class="file-name" id="vid-file-name"></div>
+            <div class="file-meta"><span id="vid-file-size"></span> · <span class="change-link" onclick="event.stopPropagation();vidPickFile()">Click to change</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section hidden" id="vid-step2">
+        <div class="step-label"><div class="step-num">2</div><span>Pick output format</span></div>
+        <div class="formats-row" id="vid-formats">
+          <span class="source-badge" id="vid-source-badge"></span>
+          <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <span style="font-size:0.85rem;font-weight:700">Convert to:</span>
+        </div>
+        <div class="formats-row" id="vid-format-btns"></div>
+      </div>
+
+      <div id="vid-convert-btn-wrap" class="hidden">
+        <button class="convert-btn" onclick="convertVideo()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.11"/></svg>
+          <span id="vid-btn-label">Convert to MP4</span>
+        </button>
+      </div>
+
+      <div id="vid-loading" class="progress-wrap hidden">
+        <div class="spinner-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+        </div>
+        <div class="progress-title" id="vid-loading-msg">Loading FFmpeg...</div>
+        <div class="progress-sub">Video conversion can take a minute for large files</div>
+        <div class="progress-bar-wrap" id="vid-progress-wrap" style="display:none">
+          <div class="progress-bar-labels"><span>Progress</span><span id="vid-progress-pct">0%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="vid-progress-fill"></div></div>
+        </div>
+      </div>
+
+      <div id="vid-result" class="result-wrap hidden"></div>
+    </div>
+
+  </div>
+
+  <p class="footer">Everything runs in your browser — your files never leave your device.</p>
 </div>
 
-<script type="module">
-import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
-
-const ffmpeg = createFFmpeg({ log:true });
-let loaded = false;
-
-async function loadFFmpeg(){
-  if(!loaded){
-    document.getElementById("status").innerText = "Loading engine...";
-    await ffmpeg.load();
-    loaded = true;
-  }
-}
-
-/* 🖼️ IMAGE CONVERTER */
-window.convertImage = function(){
-  const file = document.getElementById("imageFile").files[0];
-  const action = document.getElementById("imageAction").value;
-  const status = document.getElementById("status");
-
-  if(!file){
-    alert("Select an image first");
-    return;
+<script>
+  // ─── Tab switching ───────────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('panel-image').classList.toggle('active', tab === 'image');
+    document.getElementById('panel-video').classList.toggle('active', tab === 'video');
+    document.getElementById('tab-image').classList.toggle('active', tab === 'image');
+    document.getElementById('tab-video').classList.toggle('active', tab === 'video');
   }
 
-  status.innerText = "Converting image...";
+  // ─── Drag & drop helpers ─────────────────────────────────────────
+  function dzDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+  function dzDragLeave(id) { document.getElementById(id).classList.remove('dragover'); }
 
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
+  // ─── IMAGE CONVERTER ─────────────────────────────────────────────
+  const IMG_FORMATS = [
+    { v: 'png',  l: 'PNG',  s: 'style-primary-light' },
+    { v: 'jpeg', l: 'JPG',  s: 'style-secondary' },
+    { v: 'webp', l: 'WEBP', s: 'style-accent' },
+    { v: 'bmp',  l: 'BMP',  s: 'style-muted' },
+  ];
+  let imgFile = null, imgTarget = 'png';
 
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+  function imgPickFile() {
+    const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*';
+    i.onchange = e => { if (e.target.files[0]) imgSetFile(e.target.files[0]); };
+    i.click();
+  }
+  function imgDrop(e) {
+    e.preventDefault(); dzDragLeave('img-dropzone');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) imgSetFile(f);
+  }
+  function imgSetFile(f) {
+    imgFile = f;
+    resetImgResult();
+    // Show preview
+    document.getElementById('img-dz-empty').classList.add('hidden');
+    const prev = document.getElementById('img-dz-preview');
+    prev.classList.remove('hidden');
+    document.getElementById('img-preview-el').src = URL.createObjectURL(f);
+    document.getElementById('img-file-name').textContent = f.name;
+    document.getElementById('img-file-size').textContent = (f.size/1024).toFixed(1) + ' KB';
+    // Auto-pick different format
+    const srcExt = f.name.split('.').pop().toLowerCase().replace('jpg','jpeg');
+    if (srcExt === imgTarget) {
+      imgTarget = IMG_FORMATS.find(x => x.v !== srcExt)?.v || 'png';
+    }
+    // Show step 2
+    document.getElementById('img-source-badge').textContent = srcExt.toUpperCase();
+    renderImgFormatBtns(srcExt);
+    document.getElementById('img-step2').classList.remove('hidden');
+    document.getElementById('img-convert-btn-wrap').classList.remove('hidden');
+    document.getElementById('img-btn-label').textContent = 'Convert to ' + imgTarget.toUpperCase();
+  }
+  function renderImgFormatBtns(srcExt) {
+    const container = document.getElementById('img-format-btns');
+    container.innerHTML = '';
+    IMG_FORMATS.forEach(fmt => {
+      const btn = document.createElement('button');
+      btn.className = 'fmt-btn ' + fmt.s;
+      btn.textContent = fmt.l;
+      const isSrc = srcExt === fmt.v || (srcExt === 'jpg' && fmt.v === 'jpeg');
+      if (isSrc) { btn.classList.add('disabled'); btn.disabled = true; }
+      else if (fmt.v === imgTarget) btn.classList.add('selected');
+      btn.onclick = () => {
+        imgTarget = fmt.v;
+        document.querySelectorAll('#img-format-btns .fmt-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        document.getElementById('img-btn-label').textContent = 'Convert to ' + fmt.l;
+      };
+      container.appendChild(btn);
+    });
+  }
+  function resetImgResult() {
+    document.getElementById('img-result').classList.add('hidden');
+    document.getElementById('img-result').innerHTML = '';
+    document.getElementById('img-converting').classList.add('hidden');
+  }
+  function convertImage() {
+    if (!imgFile) return;
+    document.getElementById('img-step2').classList.add('hidden');
+    document.getElementById('img-convert-btn-wrap').classList.add('hidden');
+    document.getElementById('img-converting').classList.remove('hidden');
+    const img = new Image();
+    const objUrl = URL.createObjectURL(imgFile);
+    img.src = objUrl;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (imgTarget === 'jpeg' || imgTarget === 'bmp') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+      ctx.drawImage(img, 0, 0);
+      const mime = 'image/' + imgTarget;
+      const quality = imgTarget === 'jpeg' ? 0.92 : undefined;
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const base = imgFile.name.replace(/\.[^.]+$/, '');
+        const ext = imgTarget === 'jpeg' ? 'jpg' : imgTarget;
+        document.getElementById('img-converting').classList.add('hidden');
+        showImgResult(url, base + '.' + ext);
+        URL.revokeObjectURL(objUrl);
+      }, mime, quality);
+    };
+  }
+  function showImgResult(url, fname) {
+    const el = document.getElementById('img-result');
+    el.innerHTML = `
+      <div class="result-success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Conversion complete!</span>
+      </div>
+      <div class="result-preview"><img src="${url}" alt="Result" /></div>
+      <div class="result-btns">
+        <a class="dl-btn" href="${url}" download="${fname}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.11"/></svg>
+          Download
+        </a>
+        <button class="reset-btn" onclick="imgReset()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 101.85-4.5L1 10"/></svg>
+          New file
+        </button>
+      </div>`;
+    el.classList.remove('hidden');
+  }
+  function imgReset() {
+    imgFile = null; imgTarget = 'png';
+    document.getElementById('img-dz-empty').classList.remove('hidden');
+    document.getElementById('img-dz-preview').classList.add('hidden');
+    document.getElementById('img-step2').classList.add('hidden');
+    document.getElementById('img-convert-btn-wrap').classList.add('hidden');
+    document.getElementById('img-result').classList.add('hidden');
+    document.getElementById('img-result').innerHTML = '';
+  }
 
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img,0,0);
+  // ─── VIDEO CONVERTER ─────────────────────────────────────────────
+  const VID_FORMATS = [
+    { v: 'mp4',  l: 'MP4',  s: 'style-primary-light' },
+    { v: 'webm', l: 'WEBM', s: 'style-secondary' },
+    { v: 'avi',  l: 'AVI',  s: 'style-accent' },
+    { v: 'mov',  l: 'MOV',  s: 'style-muted' },
+  ];
+  let vidFile = null, vidTarget = 'mp4', ffmpegInstance = null;
 
-    let type = "image/png";
-    let ext = "png";
+  function vidPickFile() {
+    const i = document.createElement('input'); i.type = 'file'; i.accept = 'video/*';
+    i.onchange = e => { if (e.target.files[0]) vidSetFile(e.target.files[0]); };
+    i.click();
+  }
+  function vidDrop(e) {
+    e.preventDefault(); dzDragLeave('vid-dropzone');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) vidSetFile(f);
+  }
+  function vidSetFile(f) {
+    vidFile = f;
+    resetVidResult();
+    document.getElementById('vid-dz-empty').classList.add('hidden');
+    const prev = document.getElementById('vid-dz-preview');
+    prev.classList.remove('hidden');
+    document.getElementById('vid-preview-el').src = URL.createObjectURL(f);
+    document.getElementById('vid-file-name').textContent = f.name;
+    document.getElementById('vid-file-size').textContent = (f.size/(1024*1024)).toFixed(1) + ' MB';
+    const srcExt = f.name.split('.').pop().toLowerCase();
+    if (srcExt === vidTarget) {
+      vidTarget = VID_FORMATS.find(x => x.v !== srcExt)?.v || 'mp4';
+    }
+    document.getElementById('vid-source-badge').textContent = srcExt.toUpperCase();
+    renderVidFormatBtns(srcExt);
+    document.getElementById('vid-step2').classList.remove('hidden');
+    document.getElementById('vid-convert-btn-wrap').classList.remove('hidden');
+    document.getElementById('vid-btn-label').textContent = 'Convert to ' + vidTarget.toUpperCase();
+  }
+  function renderVidFormatBtns(srcExt) {
+    const container = document.getElementById('vid-format-btns');
+    container.innerHTML = '';
+    VID_FORMATS.forEach(fmt => {
+      const btn = document.createElement('button');
+      btn.className = 'fmt-btn ' + fmt.s;
+      btn.textContent = fmt.l;
+      if (srcExt === fmt.v) { btn.classList.add('disabled'); btn.disabled = true; }
+      else if (fmt.v === vidTarget) btn.classList.add('selected');
+      btn.onclick = () => {
+        vidTarget = fmt.v;
+        document.querySelectorAll('#vid-format-btns .fmt-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        document.getElementById('vid-btn-label').textContent = 'Convert to ' + fmt.l;
+      };
+      container.appendChild(btn);
+    });
+  }
+  function resetVidResult() {
+    document.getElementById('vid-result').classList.add('hidden');
+    document.getElementById('vid-result').innerHTML = '';
+    document.getElementById('vid-loading').classList.add('hidden');
+  }
 
-    if(action === "jpg"){
-      type = "image/jpeg";
-      ext = "jpg";
+  async function convertVideo() {
+    if (!vidFile) return;
+    document.getElementById('vid-step2').classList.add('hidden');
+    document.getElementById('vid-convert-btn-wrap').classList.add('hidden');
+    document.getElementById('vid-loading').classList.remove('hidden');
+    document.getElementById('vid-loading-msg').textContent = 'Loading FFmpeg...';
+    document.getElementById('vid-progress-wrap').style.display = 'none';
+
+    const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+    const { fetchFile, toBlobURL } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+
+    if (!ffmpegInstance) {
+      const ff = new FFmpeg();
+      ff.on('progress', ({ progress: p }) => {
+        const pct = Math.round(p * 100);
+        document.getElementById('vid-progress-wrap').style.display = 'block';
+        document.getElementById('vid-progress-fill').style.width = pct + '%';
+        document.getElementById('vid-progress-pct').textContent = pct + '%';
+      });
+      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ff.load({
+        coreURL: await toBlobURL(base + '/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL(base + '/ffmpeg-core.wasm', 'application/wasm'),
+      });
+      ffmpegInstance = ff;
     }
 
-    if(action === "webp"){
-      type = "image/webp";
-      ext = "webp";
-    }
+    const ff = ffmpegInstance;
+    document.getElementById('vid-loading-msg').textContent = 'Processing video...';
+    const srcExt = vidFile.name.split('.').pop().toLowerCase();
+    const inName = 'input.' + srcExt;
+    const outName = 'output.' + vidTarget;
 
-    canvas.toBlob(blob => {
-      if(!blob){
-        status.innerText = "Image conversion failed";
-        return;
-      }
+    await ff.writeFile(inName, await fetchFile(vidFile));
+    await ff.exec(['-i', inName, outName]);
 
-      const url = URL.createObjectURL(blob);
+    const data = await ff.readFile(outName);
+    const blob = new Blob([data.buffer], { type: 'video/' + vidTarget });
+    const url = URL.createObjectURL(blob);
+    const base2 = vidFile.name.replace(/\.[^.]+$/, '');
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "converted." + ext;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      URL.revokeObjectURL(url);
-
-      status.innerText = "Done!";
-    }, type);
-  };
-};
-
-/* 🎥 VIDEO CONVERTER */
-window.convertVideo = async function(){
-
-  const file = document.getElementById("videoFile").files[0];
-  const action = document.getElementById("videoAction").value;
-  const status = document.getElementById("status");
-
-  if(!file){
-    alert("Select a video first");
-    return;
+    document.getElementById('vid-loading').classList.add('hidden');
+    showVidResult(url, base2 + '.' + vidTarget);
   }
 
-  await loadFFmpeg();
-
-  status.innerText = "Processing video...";
-
-  ffmpeg.FS('writeFile','input',await fetchFile(file));
-
-  let out = action === "mp3" ? "out.mp3" : "out.mp4";
-
-  if(action === "mp3"){
-    await ffmpeg.run('-i','input','out.mp3');
-  } else {
-    await ffmpeg.run('-i','input','-c:v','libx264','out.mp4');
+  function showVidResult(url, fname) {
+    const el = document.getElementById('vid-result');
+    el.innerHTML = `
+      <div class="result-success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Conversion complete!</span>
+      </div>
+      <div class="result-preview"><video controls src="${url}" style="width:100%;border-radius:1.5rem;max-height:200px"></video></div>
+      <div class="result-btns">
+        <a class="dl-btn" href="${url}" download="${fname}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.11"/></svg>
+          Download
+        </a>
+        <button class="reset-btn" onclick="vidReset()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 101.85-4.5L1 10"/></svg>
+          New file
+        </button>
+      </div>`;
+    el.classList.remove('hidden');
   }
 
-  const data = ffmpeg.FS('readFile',out);
-
-  let mime = action === "mp3" ? "audio/mpeg" : "video/mp4";
-
-  const blob = new Blob([data.buffer], { type: mime });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `converted.${action}`;
-
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
-
-  status.innerText = "Done!";
-};
-
+  function vidReset() {
+    vidFile = null; vidTarget = 'mp4';
+    document.getElementById('vid-dz-empty').classList.remove('hidden');
+    document.getElementById('vid-dz-preview').classList.add('hidden');
+    document.getElementById('vid-step2').classList.add('hidden');
+    document.getElementById('vid-convert-btn-wrap').classList.add('hidden');
+    document.getElementById('vid-result').classList.add('hidden');
+    document.getElementById('vid-result').innerHTML = '';
+  }
 </script>
-
 </body>
 </html>
